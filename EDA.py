@@ -49,13 +49,17 @@ def weather_plot(weather_dfs):
         plt.plot(temp_df, label=temp_df.columns)
         plt.title(key)
         plt.legend()
+    
         plt.show()
 
 # %%
 plant_df, weather_dict, plant_power_dict = road_data()
+# %%
 
 for plant in list(plant_power_dict.keys()):
     try:
         draw_totalYield(plant_power_dict, plant)
-    except:
+    except Exception as e: 
         print("Error : {}".format(plant))
+        print(e)
+# %%
