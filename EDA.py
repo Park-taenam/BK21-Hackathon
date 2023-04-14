@@ -41,25 +41,49 @@ def draw_totalYield(plant_dfs, plantName):
     plt.show()
     return
 
-def weather_plot(weather_dfs):
-    for key, value in weather_dfs.items():
-        temp_df = value
-        temp_df = temp_df.drop(['현지기압(hPa)', '풍향(16방위)', '습도(%)', '전운량(10분위)'], axis=1)
-        plt.figure(figsize=(15, 8))
-        plt.plot(temp_df, label=temp_df.columns)
-        plt.title(key)
-        plt.legend()
-    
-        plt.show()
+def add_yield_diff(plant_info_df, plant_power_dict):
+    for key, value in plant_power_dict.items():
+        plant_power_df = plant_power_dict[key]
 
-# %%
-plant_df, weather_dict, plant_power_dict = road_data()
-# %%
+        plant_power_df['volume'] = list(plant_info_df.loc[plant_info_df['구분자'] == plant_power_df['Plant'].unique()[0], '용량'])[0]
 
-for plant in list(plant_power_dict.keys()):
-    try:
-        draw_totalYield(plant_power_dict, plant)
-    except Exception as e: 
-        print("Error : {}".format(plant))
-        print(e)
+        for inverter in plant_power_df['Inverter'].unique():
+            inverter_idx = (plant_power_df['Inverter'] == inverter)
+            plant_power_df['yield_diff_1'] = (plant_power_df.loc[inverter_idx, 'Total Yield(kWh)']).diff()
+            plant_power_df['yield_diff_2'] = (plant_power_df.loc[inverter_idx, 'yield_diff_1']).diff()    
+
+    return plant_power_dict
 # %%
+if __name__ == "__main__":
+    ## Road Data
+    plant_info_df, weather_dict, plant_power_dict = road_data()
+
+    ## Yield Diff
+    plant_power_dict = add_yield_diff(plant_info_df, plant_power_dict)
+
+    ## Visualization
+    # Plant Power - Total Yield
+    for plant in list(plant_power_dict.keys()):
+        try:
+            draw_totalYield(plant_power_dict, plant)
+        except Exception as e: 
+            print("Error : {}".format(plant))
+            print(e)
+    # %%
+    for key, value in plant_power_dict.items():
+        value['Plant'] = key
+
+
+    import pickle
+
+    with open('test.pkl', 'wb') as fp:
+        pickle.dump(plant_power_dict, fp)
+        print('dictionary saved successfully to file')
+
+
+    # Read dictionary pkl file
+    with open('test.pkl', 'rb') as fp:
+        test = pickle.load(fp)
+        print('Person dictionary')
+
+    test_df = plant_power_dict['ds'].loc[plant_power_dict['ds']['Inverter']=='KACO01', :].reset_index().iloc[:, 1:]
