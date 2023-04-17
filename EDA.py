@@ -1,12 +1,17 @@
 # %%
+import pickle
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
+from datetime import datetime
+
+import warnings
+warnings.filterwarnings('ignore')
 # %%
 def road_data():
-    plant_df = pd.read_pickle('./Data/plant_info.pkl')
-    plant_list = plant_df['구분자']
+    plant_info_df = pd.read_pickle('./Data/plant_info.pkl')
+    plant_list = plant_info_df['구분자']
 
     city_list = ['gangjin', 'haenam', 'mokpo']
     weather_dict = {}
@@ -17,10 +22,16 @@ def road_data():
     for plant in plant_list:
         plant_power_dict[plant] = pd.read_pickle('./Data/powerplant/{}.pkl'.format(plant))
 
-    return plant_df, weather_dict, plant_power_dict 
+    with open('./Data/filled_plant_with_weather.pkl', 'rb') as fp:
+        plant_with_weather_dict = pickle.load(fp)
+
+    return plant_info_df, weather_dict, plant_power_dict, plant_with_weather_dict
 # %%
 def draw_totalYield(plant_dfs, plantName):
-    # 발전량 데이터프레임을 저장한 딕셔너리와 발전소 이름을 인자값으로 넣으면 해당 발전소의 Total Yield(kWh) 값을 Inverter별, 그리고 월별로 plot함.
+    '''
+    parameter : 발전량 데이터프레임을 저장한 딕셔너리, 발전소 이름
+    output : 해당 발전소의 Total Yield(kWh) 값을 Inverter별, 그리고 월별로 plot
+    '''
     subdata = plant_dfs[plantName].copy()[['Inverter', 'Date', 'Total Yield(kWh)']]
     subdata['Md'] = subdata['Date'].apply(lambda x: x[:-6])
     subdata = subdata.sort_values(by='Date')
@@ -41,25 +52,48 @@ def draw_totalYield(plant_dfs, plantName):
     plt.show()
     return
 
-def add_yield_diff(plant_info_df, plant_power_dict):
-    for key, value in plant_power_dict.items():
-        plant_power_df = plant_power_dict[key]
+def add_yield_diff(plant_info_df, plant_with_weather_dict):
+    for key in plant_with_weather_dict.keys():
+        plant_df = plant_with_weather_dict[key]
 
-        plant_power_df['volume'] = list(plant_info_df.loc[plant_info_df['구분자'] == plant_power_df['Plant'].unique()[0], '용량'])[0]
+        # create volume
+        if key == "dj":
+            plant_df['volume'] = 98.770
+        else:
+            plant_df['volume'] = list(plant_info_df.loc[plant_info_df['구분자'] == plant_df['Plant'].unique()[0], '용량'])[0]
 
-        for inverter in plant_power_df['Inverter'].unique():
-            inverter_idx = (plant_power_df['Inverter'] == inverter)
-            plant_power_df['yield_diff_1'] = (plant_power_df.loc[inverter_idx, 'Total Yield(kWh)']).diff()
-            plant_power_df['yield_diff_2'] = (plant_power_df.loc[inverter_idx, 'yield_diff_1']).diff()    
+        # create yield_diff 1, 2
+        for inverter in plant_df['Inverter'].unique():
+            inverter_idx = (plant_df['Inverter'] == inverter)
+            plant_inverter_df = plant_df.loc[inverter_idx, :]
+            plant_inverter_df = plant_inverter_df.sort_values(by='Date', ascending=True)
+            
+            # diff 1
+            yield_diff_1 = plant_inverter_df['Total Yield(kWh)'].diff().fillna(0)
+            plant_df.loc[yield_diff_1.index, 'yield_diff_1'] = yield_diff_1
+            
+            yield_diff_2 = plant_df['yield_diff_1'].diff().fillna(0)
+            plant_df.loc[yield_diff_2.index, 'yield_diff_2'] = yield_diff_2
+        
+        plant_df['percent'] = plant_df['yield_diff_1']/plant_df['volume']
+        
+        plant_with_weather_dict[key] = plant_df  
+    
+    with open('./Data/final_data.pkl', 'wb') as fp:
+        pickle.dump(plant_with_weather_dict, fp)
+        print('dictionary saved successfully to file')
 
-    return plant_power_dict
+    return plant_with_weather_dict
+
 # %%
 if __name__ == "__main__":
     ## Road Data
-    plant_info_df, weather_dict, plant_power_dict = road_data()
+    plant_info_df, weather_dict, plant_power_dict, plant_with_weather_dict = road_data()
+
+    plant_name_list = list(plant_with_weather_dict.keys())
 
     ## Yield Diff
-    plant_power_dict = add_yield_diff(plant_info_df, plant_power_dict)
+    plant_power_dict = add_yield_diff(plant_info_df, plant_with_weather_dict)
 
     ## Visualization
     # Plant Power - Total Yield
@@ -69,21 +103,3 @@ if __name__ == "__main__":
         except Exception as e: 
             print("Error : {}".format(plant))
             print(e)
-    # %%
-    for key, value in plant_power_dict.items():
-        value['Plant'] = key
-
-
-    import pickle
-
-    with open('test.pkl', 'wb') as fp:
-        pickle.dump(plant_power_dict, fp)
-        print('dictionary saved successfully to file')
-
-
-    # Read dictionary pkl file
-    with open('test.pkl', 'rb') as fp:
-        test = pickle.load(fp)
-        print('Person dictionary')
-
-    test_df = plant_power_dict['ds'].loc[plant_power_dict['ds']['Inverter']=='KACO01', :].reset_index().iloc[:, 1:]
