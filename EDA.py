@@ -1,4 +1,6 @@
 # %%
+import os
+import platform
 import pickle
 import numpy as np
 import pandas as pd
@@ -8,6 +10,14 @@ from datetime import datetime
 
 import warnings
 warnings.filterwarnings('ignore')
+
+op_sys = platform.system()
+font_family = 'AppleGothic' if op_sys=='Darwin' else 'NanumGothic'
+plt.rcParams['font.family'] = font_family
+
+sns.set_context("talk")
+sns.set_style("white")
+sns.set_palette("Set1")
 # %%
 def road_data():
     plant_info_df = pd.read_pickle('./Data/plant_info.pkl')
@@ -92,7 +102,7 @@ if __name__ == "__main__":
 
     plant_name_list = list(plant_with_weather_dict.keys())
 
-    ## Yield Diff
+    ## Volume, Yield Diff
     plant_power_dict = add_yield_diff(plant_info_df, plant_with_weather_dict)
 
     ## Visualization
