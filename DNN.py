@@ -7,15 +7,8 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
-import torchvision.datasets as dsets
-import torchvision.transforms as transforms
-import torch
-import torch.nn as nn
-import torch.nn.functional as F
-import torch.optim as optim
 import torch.utils.data as data_utils
 
-from sklearn.compose import make_column_transformer
 from DNN_utils import *
 
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
