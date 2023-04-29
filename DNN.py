@@ -160,8 +160,6 @@ if __name__=="__main__":
         pred_dict = prediction(inverter_list, model, val_X, val_y)
         evaluate_df = evaluate(evaluate_df, plant_name, pred_dict)
 
-        evaluate_df.to_csv('./DNN_evaluate.csv')
-    print('Done')
-
-
+        evaluate_df.to_csv('./result/DNN_result.csv')
+    print('Model Training Done')
 # %%

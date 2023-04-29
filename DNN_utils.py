@@ -10,10 +10,16 @@ from sklearn.metrics import r2_score
 def sin_transformer(period):
     return FunctionTransformer(lambda x: np.sin(x / period * 2 * np.pi))
 
+def cos_transformer(period):
+    return FunctionTransformer(lambda x: np.cos(x / period * 2 * np.pi))
+
 def create_features(df):
     # time ,day encoding
     df['hour_sin'] = sin_transformer(24).fit_transform(df['time'].dt.hour)
     df['day_sin'] = sin_transformer(365).fit_transform(df['time'].dt.dayofyear)
+
+    df['hour_cos'] = cos_transformer(24).fit_transform(df['time'].dt.hour)
+    df['day_cos'] = cos_transformer(365).fit_transform(df['time'].dt.dayofyear)
     
     return df
 
@@ -31,11 +37,11 @@ def split_data_time(df, num=120):
     return inverter_list, train_df, test_df
 
 def feature_selection(df_train, df_test):
-    feat_1 = ['Inverter', '기온(°C)', '강수량(mm)', '풍속(m/s)',
+    feat = ['Inverter', '기온(°C)', '강수량(mm)', '풍속(m/s)',
           '습도(%)', '현지기압(hPa)', '일조(hr)', '일사(MJ/m2)', '적설(cm)', 
-          '전운량(10분위)', '지면온도(°C)', 'hour_sin', 'day_sin']
+          '전운량(10분위)', '지면온도(°C)', 'hour_sin', 'day_sin', 'hour_cos', 'day_cos']
     
-    X_train, X_test = df_train[feat_1], df_test[feat_1]
+    X_train, X_test = df_train[feat], df_test[feat]
     y_train, y_test = df_train['yield_diff_1'], df_test['yield_diff_1']
 
     return X_train, y_train, X_test, y_test
