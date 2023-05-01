@@ -14,5 +14,5 @@
 -	timeonly_et(Folder) : 시간 데이터만 활용한 Extra Trees 모델의 각 Inverter별 성능
 -	time_weather_et(Folder) : 시간, 날씨 데이터 활용한 Extra Trees 모델의 각 Inverter별 성능
 -	DNN(Folder)
-  - compare_real_pred(Folder) : DNN 모델의 각 Inverter별 성능
-  - Loss(Folder) : DNN 학습과정 동안의 train, val Loss
+    - compare_real_pred(Folder) : DNN 모델의 각 Inverter별 성능
+    - Loss(Folder) : DNN 학습과정 동안의 train, val Loss
